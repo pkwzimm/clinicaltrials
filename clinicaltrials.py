@@ -91,7 +91,10 @@ for u in url_list:
         contact_big = contact_big.replace('Contact: ','')
         contact_firstname_raw = re.search('^.*?(?=\s)', contact_big)
         contact_names_item.append(contact_big)
-        contact_firstnames_item.append(contact_firstname_raw[0])
+        try:
+            contact_firstnames_item.append(contact_firstname_raw[0])
+        except TypeError:
+            contact_firstnames_item.append('')
     contact_names.append(str(contact_names_item).strip('[]'))
     contact_firstnames.append(str(contact_firstnames_item).strip('[]'))
     emails = browser.find_elements_by_xpath("//a[@id='contacts']/following-sibling::table/tbody/tr/td/a[starts-with(@href, 'mailto')]")
@@ -106,11 +109,20 @@ for u in url_list:
         firstemail = ""
     firstemails.append(firstemail)
 
+#only take the first name of the first person in the list
+firstnames = []
+for contact_firstname in contact_firstnames:
+    try:
+        firstname = contact_firstname.split(',')
+        firstnames.append(firstname[0])
+    except AttributeError:
+        pass
+
 #convert the lists into pandas dataframes
 print("Loading contacts into dataframe...")
 url_list_df = DataFrame(url_list,columns=['URL'])
 contact_names_df = DataFrame(contact_names,columns=['Contact Names'])
-contact_firstnames_df = DataFrame(contact_firstnames,columns=['Contact First Names'])
+contact_firstnames_df = DataFrame(firstnames,columns=['Contact First Names'])
 email_list_df = DataFrame(email_list,columns=['Emails'])
 firstemails_df = DataFrame(firstemails,columns=['First Email'])
 
@@ -122,7 +134,7 @@ details_df = details_df.merge(firstemails_df,how='inner', left_index=True, right
 
 #merge the original dataframe with the new one
 df = df.merge(details_df,how='inner', left_on=['URL'], right_on=['URL'])
-print("Merging dataframes...")
+print("Merging Dataframes")
 
 #output to csv file
 csv_filename = 'ctgov_' + str(startdate.month) + '-'+ str(startdate.day) + '-' + str(startdate.year) + '_to_' + str(enddate.month) + '-'+ str(enddate.day) + '-' + str(enddate.year) + '.csv'
